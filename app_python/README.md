@@ -143,3 +143,45 @@ FastAPI 0.115.0 - Modern Python web framework
 Uvicorn 0.32.0 - ASGI server
 
 Python 3.11+ - Programming language
+
+## Docker Containerization
+
+This application is containerized using Docker for consistent deployment.
+
+### Quick Start
+```bash
+# Build locally
+docker build -t devops-info-service:latest .
+
+# Run locally
+docker run -d -p 8000:8000 devops-info-service:latest
+
+# Or pull from Docker Hub
+docker pull brainpumpkin/devops-info-service:latest
+docker run -d -p 8000:8000 brainpumpkin/devops-info-service:latest
+```
+## Docker Hub
+Repository: https://hub.docker.com/r/brainpumpkin/devops-info-service
+
+### Pull Command:
+
+```bash
+docker pull brainpumpkin/devops-info-service:latest
+```
+### Useful Commands
+```bash
+# View running containers
+docker ps
+
+# View logs
+docker logs devops-info
+
+# Stop container
+docker stop devops-info
+
+# Enter container shell
+docker exec -it devops-info bash
+
+# Check health status
+docker inspect --format='{{.State.Health.Status}}' devops-info
+```
