@@ -1,0 +1,198 @@
+name: Python CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop, lab* ]
+    paths:
+      - 'app_python/**'
+      - '.github/workflows/python-ci.yml'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'app_python/**'
+      - '.github/workflows/python-ci.yml'
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/devops-info-service
+  PYTHON_VERSION: '3.13'
+  DOCKERFILE_PATH: './app_python/Dockerfile'
+  CONTEXT_PATH: './app_python'
+
+jobs:
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app_python
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: 'app_python/requirements*.txt'
+
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('app_python/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          pip install pylint pytest pytest-cov
+
+      - name: Run linting with pylint
+        run: |
+          pylint --fail-under=8.0 *.py tests/*.py || echo "Linting warnings found, but continuing..."
+
+      - name: Run tests with pytest and coverage
+        run: |
+          pytest tests/ -v --cov=. --cov-report=xml --cov-report=term-missing --cov-fail-under=70
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          file: ./coverage.xml
+          flags: python
+          name: python-coverage
+          fail_ci_if_error: false
+
+  security-scan:
+    name: Security Scan with Snyk
+    runs-on: ubuntu-latest
+    needs: test
+    defaults:
+      run:
+        working-directory: ./app_python
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/python@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file=requirements.txt
+
+  docker:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Generate version tag (CalVer)
+        id: version
+        run: |
+          # Calendar Versioning: YYYY.MM.DD
+          DATE_TAG=$(date +'%Y.%m.%d')
+          # Add build number for uniqueness
+          FULL_TAG="${DATE_TAG}-${{ github.run_number }}"
+          SHA_TAG="${FULL_TAG}-${{ github.sha }}"
+          echo "version=${FULL_TAG}" >> $GITHUB_OUTPUT
+          echo "date=${DATE_TAG}" >> $GITHUB_OUTPUT
+          echo "sha=${SHA_TAG}" >> $GITHUB_OUTPUT
+          echo "latest=latest" >> $GITHUB_OUTPUT
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=${{ steps.version.outputs.sha }}
+            type=raw,value=${{ steps.version.outputs.date }}
+            type=raw,value=latest
+            type=sha,format=short
+          labels: |
+            org.opencontainers.image.title=DevOps Info Service
+            org.opencontainers.image.description=FastAPI service for DevOps course
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.created=${{ steps.version.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ env.CONTEXT_PATH }}
+          file: ${{ env.DOCKERFILE_PATH }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ steps.version.outputs.date }}
+            VERSION=${{ steps.version.outputs.version }}
+            VCS_REF=${{ github.sha }}
+
+  docker-build-test:
+    name: Test Docker Build
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && startsWith(github.ref_name, 'lab'))
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (test only, no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ env.CONTEXT_PATH }}
+          file: ${{ env.DOCKERFILE_PATH }}
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:test-${{ github.sha }}
+          cache-from: type=gha
+          load: true
+
+      - name: Test Docker image
+        run: |
+          docker run --rm -d -p 8000:8000 --name test-app ${{ env.IMAGE_NAME }}:test-${{ github.sha }}
+          sleep 5
+          curl -f http://localhost:8000/health || exit 1
+          docker stop test-app

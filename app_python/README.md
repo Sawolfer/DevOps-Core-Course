@@ -185,3 +185,7 @@ docker exec -it devops-info bash
 # Check health status
 docker inspect --format='{{.State.Health.Status}}' devops-info
 ```
+
+# DevOps Info Service
+
+![Python CI/CD Pipeline](https://github.com/Sawolfer/DevOps-Core-Course/workflows/Python%20CI%2FCD%20Pipeline/badge.svg?branch=lab03)
