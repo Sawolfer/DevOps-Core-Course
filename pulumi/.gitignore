@@ -1,0 +1,60 @@
+# Pulumi
+Pulumi.*.yaml
+!Pulumi.yaml
+!Pulumi.*.yaml.example
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+
+# Python
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual Environments
+venv
+ENV
+env
+.venv
+
+# SSH Keys
+*.pem
+*.key
+!*.pub
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+
+# Secrets and state (if using local state)
+.pulumi/
+Pulumi.dev.yaml  # Usually contains secrets/config
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
