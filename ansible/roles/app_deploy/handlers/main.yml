@@ -1,0 +1,17 @@
+---
+# Handlers for app_deploy role
+
+- name: restart app container
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    state: restarted
+  listen: restart app
+
+- name: verify app health
+  uri:
+    url: "http://localhost:{{ app_port }}{{ health_check_path }}"
+    method: GET
+    status_code: 200
+  retries: 3
+  delay: 5
+  listen: verify app health

@@ -1,0 +1,24 @@
+---
+# Main site playbook - runs full provisioning and deployment
+- name: Full site deployment
+  hosts: webservers
+  become: yes
+
+  roles:
+    - common
+    - docker
+    - app_deploy
+
+  post_tasks:
+    - name: Display deployment completion message
+      debug:
+        msg: |
+          ===================================
+          Deployment completed successfully!
+          ===================================
+          Application: {{ app_name }}
+          Container: {{ app_container_name }}
+          Port: {{ app_port }}
+          Access: http://{{ ansible_host }}:{{ app_port }}
+          Health: http://{{ ansible_host }}:{{ app_port }}/health
+          ===================================

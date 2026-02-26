@@ -1,0 +1,19 @@
+---
+# Default variables for common role
+# Override these in group_vars or playbook if needed
+
+# List of essential packages to install on all systems
+common_packages:
+  - python3-pip
+  - curl
+  - wget
+  - git
+  - vim
+  - htop
+  - net-tools
+  - ca-certificates
+  - gnupg
+  - lsb-release
+
+# System timezone (optional)
+system_timezone: "UTC"

@@ -1,0 +1,29 @@
+---
+# Application deployment playbook
+# Deploys containerized application using Docker
+- name: Deploy application
+  hosts: webservers
+  become: yes
+
+  roles:
+    - app_deploy
+
+  post_tasks:
+    - name: Get container status
+      command: docker ps --filter name={{ app_container_name }} --format "table {{{{.Names}}}}\t{{{{.Status}}}}\t{{{{.Ports}}}}"
+      register: container_status
+      changed_when: false
+
+    - name: Display deployment status
+      debug:
+        msg: |
+          ===================================
+          Application deployment complete!
+          ===================================
+          Container Status:
+          {{ container_status.stdout }}
+          
+          Access URLs:
+          - Main: http://{{ ansible_host }}:{{ app_port }}
+          - Health: http://{{ ansible_host }}:{{ app_port }}/health
+          ===================================

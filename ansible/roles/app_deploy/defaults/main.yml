@@ -1,0 +1,21 @@
+---
+# Default variables for app_deploy role
+
+# Application configuration
+app_name: "devops-app"
+app_port: 5000
+app_container_name: "{{ app_name }}"
+
+# Docker image configuration
+# Note: dockerhub_username, dockerhub_password, docker_image, and docker_image_tag
+# should be defined in group_vars/all.yml (encrypted with Ansible Vault)
+
+# Container restart policy
+app_restart_policy: "unless-stopped"
+
+# Health check configuration
+health_check_path: "/health"
+health_check_timeout: 60
+
+# Environment variables for the container (if needed)
+app_environment: {}
