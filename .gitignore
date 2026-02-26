@@ -86,12 +86,6 @@ pip-log.txt
 # Docker (optional)
 .docker/
 
-# Ansible
-ansible/*.retry
-ansible/.vault_pass
-ansible/**/__pycache__/
-ansible/**/*.pyc
-
 # Misc
 .credentials
 .env.local

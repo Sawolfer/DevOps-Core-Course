@@ -112,10 +112,9 @@ resource "yandex_compute_instance" "lab_vm" {
   }
 
   network_interface {
-    subnet_id = yandex_vpc_subnet.lab_subnet.id
-    # Security groups - commented out due to compatibility issues
-    # security_group_ids = [yandex_vpc_security_group.lab_sg.id]
-    nat = true # Assign public IP
+    subnet_id       = yandex_vpc_subnet.lab_subnet.id
+    security_groups = [yandex_vpc_security_group.lab_sg.id]
+    nat             = true # Assign public IP
   }
 
   metadata = {
