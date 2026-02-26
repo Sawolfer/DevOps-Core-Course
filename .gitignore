@@ -1,1 +1,94 @@
+# Test directories
 test
+__pycache__/
+*.pyc
+
+# Python environments
+venv/
+.venv/
+env/
+ENV/
+.env
+*.egg-info/
+dist/
+build/
+
+# Terraform
+terraform/.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+terraform.tfvars
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+crash.log
+crash.*.log
+.terraform
+
+# Pulumi
+Pulumi.*.yaml
+pulumi/.pulumi/
+pulumi/venv/
+pulumi/*.pyc
+
+# SSH Keys & Cloud Service Account Keys
+*.pem
+*.key
+!*.pub
+key.json
+service-account*.json
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# OS Files
+.DS_Store
+Thumbs.db
+.vagrant/
+
+# Node/npm (for any JS-based labs)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# AWS/Cloud credentials
+~/.aws/credentials
+~/.aws/config
+
+# Logs
+*.log
+pip-log.txt
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Docker (optional)
+.docker/
+
+# Misc
+.credentials
+.env.local
+*.bak
+*~
+.#*

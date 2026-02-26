@@ -1,0 +1,35 @@
+# Yandex Cloud Configuration for terraform.tfvars
+# Copy this file to terraform.tfvars and update values
+# terraform.tfvars is in .gitignore for security
+
+# REQUIRED: Your Yandex Cloud Folder ID
+# Get it from: https://console.cloud.yandex.ru/
+# It looks like: b1gg86q2uctbr0as5gzg
+yandex_folder_id = "your-folder-id-here"
+
+# Optional: Path to service account key file (JSON)
+# Download from Yandex Cloud Console
+yandex_key_file = "./key.json"
+
+# Optional: Service account ID (leave empty if not using)
+service_account_id = ""
+
+# Availability zone (ru-central1-a, ru-central1-b, or ru-central1-c)
+yandex_zone = "ru-central1-a"
+
+# General settings
+environment  = "lab"
+project_name = "devops-lab04"
+
+# Network CIDR
+subnet_cidr = "10.0.1.0/24"
+
+# SSH public key path
+public_key_path = "~/.ssh/lab04_key.pub"
+
+# IMPORTANT: Restrict SSH access to your IP for security!
+# Change from default ["0.0.0.0/0"] to your IP
+# Example: ssh_cidr_blocks = ["203.0.113.45/32"]
+# Get your IP: curl https://api.ipify.org
+ssh_cidr_blocks = ["0.0.0.0/0"]
+

@@ -1,0 +1,11 @@
+name: devops-lab04
+runtime: python
+description: Lab 04 - Infrastructure as Code with Pulumi on Yandex Cloud
+main: .
+
+config:
+  yandex:folder_id:
+    description: Yandex Cloud Folder ID
+  yandex:zone:
+    description: Yandex Cloud availability zone
+    default: ru-central1-a
