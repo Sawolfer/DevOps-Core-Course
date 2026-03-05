@@ -1,0 +1,12 @@
+---
+- name: Provision hosts for Docker workloads
+  hosts: all
+  become: true
+
+  roles:
+    - role: common
+      tags:
+        - common
+    - role: docker
+      tags:
+        - docker

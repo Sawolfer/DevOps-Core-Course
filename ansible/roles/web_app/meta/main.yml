@@ -1,0 +1,4 @@
+---
+# Dependency ensures Docker is installed before any compose operations.
+dependencies:
+  - role: docker

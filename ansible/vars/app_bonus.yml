@@ -1,0 +1,10 @@
+---
+web_app_name: "{{ lookup('ansible.builtin.env', 'BONUS_APP_NAME') | default('devops-go', true) }}"
+web_app_docker_image: "{{ lookup('ansible.builtin.env', 'BONUS_DOCKER_IMAGE') | default((lookup('ansible.builtin.env', 'DOCKERHUB_USERNAME') | default('your_dockerhub_username', true)) ~ '/devops-info-service-go', true) }}"
+web_app_docker_tag: "{{ lookup('ansible.builtin.env', 'BONUS_DOCKER_TAG') | default('latest', true) }}"
+web_app_port: "{{ lookup('ansible.builtin.env', 'BONUS_APP_PORT') | default('8001', true) | int }}"
+web_app_internal_port: "{{ lookup('ansible.builtin.env', 'BONUS_APP_INTERNAL_PORT') | default('8080', true) | int }}"
+web_app_compose_project_dir: "/opt/{{ web_app_name }}"
+web_app_env:
+  APP_ENV: production
+  APP_NAME: devops-go

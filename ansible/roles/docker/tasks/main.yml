@@ -1,0 +1,82 @@
+---
+# Docker installation and configuration.
+
+- name: Docker installation block
+  become: true
+  tags:
+    - docker
+    - docker_install
+  block:
+    - name: Install apt prerequisites for Docker repository
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: true
+
+    - name: Ensure keyring directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Add Docker apt GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Add Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: "{{ docker_apt_repo }}"
+        state: present
+        filename: docker
+
+    - name: Install Docker engine packages
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: true
+
+  rescue:
+    - name: Wait before retrying Docker apt metadata refresh
+      ansible.builtin.pause:
+        seconds: 10
+
+    - name: Retry apt cache update
+      ansible.builtin.apt:
+        update_cache: true
+        update_cache_retries: 5
+        update_cache_retry_max_delay: 12
+
+    - name: Retry Docker engine packages install
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+
+  always:
+    - name: Ensure Docker service is enabled and started
+      ansible.builtin.service:
+        name: docker
+        enabled: true
+        state: started
+
+- name: Docker configuration block
+  become: true
+  tags:
+    - docker
+    - docker_config
+  block:
+    - name: Ensure deploy user is in docker group
+      ansible.builtin.user:
+        name: "{{ common_deploy_user }}"
+        groups: docker
+        append: true
+
+    - name: Verify docker daemon is active
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+      changed_when: false

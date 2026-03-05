@@ -1,0 +1,12 @@
+---
+# Common role defaults.
+common_packages:
+  - curl
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - apt-transport-https
+  - software-properties-common
+
+common_deploy_user: deploy
+common_deploy_user_shell: /bin/bash

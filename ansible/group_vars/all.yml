@@ -1,0 +1,24 @@
+---
+# Global variables used by web_app role and playbooks.
+
+# Optional env-driven defaults.
+dockerhub_username: "{{ lookup('ansible.builtin.env', 'DOCKERHUB_USERNAME') | default('your_dockerhub_username', true) }}"
+
+# Web app defaults (can be overridden by vars files or environment)
+web_app_name: devops-app
+web_app_docker_image: "{{ lookup('ansible.builtin.env', 'PYTHON_DOCKER_IMAGE') | default(dockerhub_username ~ '/devops-info-service', true) }}"
+web_app_docker_tag: latest
+web_app_port: "{{ lookup('ansible.builtin.env', 'APP_PORT') | default('8000', true) | int }}"
+web_app_internal_port: "{{ lookup('ansible.builtin.env', 'APP_INTERNAL_PORT') | default('8000', true) | int }}"
+web_app_compose_project_dir: "/opt/{{ web_app_name }}"
+web_app_docker_compose_version: "3.8"
+
+# Environment variables passed into container
+web_app_env:
+  APP_ENV: production
+  APP_PORT: "{{ web_app_internal_port }}"
+
+# Vault encrypted secret placeholder.
+# Replace using:
+# ansible-vault encrypt_string 'your-secret-value' --name 'app_secret_key'
+app_secret_key: "{{ lookup('ansible.builtin.env', 'APP_SECRET_KEY') | default('change-me-with-vault', true) }}"
