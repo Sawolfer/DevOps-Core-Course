@@ -7,6 +7,7 @@ A simple web service that provides comprehensive information about itself and it
 This service exposes two HTTP endpoints:
 - `/` - Returns detailed service, system, runtime, and request information
 - `/health` - Returns health status (for monitoring and Kubernetes probes)
+- `/metrics` - Exposes Prometheus metrics (for scraping)
 
 ## Prerequisites
 
@@ -120,6 +121,15 @@ Simple health check endpoint for monitoring.
   "uptime_seconds": 3600
 }
 ```
+
+**GET /metrics**
+
+Prometheus-compatible metrics endpoint.
+
+*Example*
+```bash
+curl http://localhost:8000/metrics
+```
 ## Testing
 
 ### Using browser
@@ -132,6 +142,9 @@ curl http://localhost:8000/
 
 # Health check
 curl http://localhost:8000/health
+
+# Prometheus metrics
+curl http://localhost:8000/metrics
 
 # Pretty print with jq (if installed)
 curl http://localhost:8000/ | jq

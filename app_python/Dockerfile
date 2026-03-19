@@ -7,6 +7,11 @@
 # Final stage
 FROM python:3.13-slim
 
+# Tools for container healthchecks
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
 # Metadata
 LABEL maintainer="Savva Ponomarev <s.ponomarev@innopolis.university>"
 LABEL description="DevOps Info Service - FastAPI System Monitoring"

@@ -10,3 +10,11 @@ datasources:
     editable: true
     jsonData:
       maxLines: 1000
+
+  - name: Prometheus
+    uid: grafana-prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: false
+    editable: true
