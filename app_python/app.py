@@ -9,8 +9,10 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
+from prometheus_client import Counter, Gauge, Histogram, generate_latest
+from prometheus_client.exposition import CONTENT_TYPE_LATEST
 
 
 class JSONFormatter(logging.Formatter):
@@ -92,6 +94,43 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Prometheus metrics
+HTTP_REQUESTS_TOTAL = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"],
+)
+HTTP_REQUEST_DURATION_SECONDS = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint", "status_code"],
+)
+HTTP_ACTIVE_REQUESTS = Gauge(
+    "http_active_requests",
+    "Active HTTP requests",
+    ["method", "endpoint", "status_code"],
+)
+
+DEVOPS_INFO_ENDPOINT_CALLS = Counter(
+    "devops_info_endpoint_calls_total",
+    "Endpoint calls",
+    ["endpoint"],
+)
+DEVOPS_INFO_SYSTEM_COLLECTION_SECONDS = Histogram(
+    "devops_info_system_collection_seconds",
+    "System info collection time",
+    ["endpoint"],
+)
+DEVOPS_INFO_UPTIME_SECONDS = Gauge(
+    "devops_info_uptime_seconds",
+    "Service uptime in seconds",
+)
+
+# Expose Prometheus metrics endpoint (no redirect).
+@app.get("/metrics")
+async def metrics() -> Response:
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 START_TIME = time.time()
 
 start_time = datetime.now()
@@ -110,24 +149,41 @@ def get_uptime():
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     started_at = time.perf_counter()
-    response = await call_next(request)
-    duration_ms = round((time.perf_counter() - started_at) * 1000, 2)
+    endpoint = request.url.path
+    method = request.method
 
-    extra = {
-        "event": "http_request",
-        "method": request.method,
-        "path": request.url.path,
-        "status_code": response.status_code,
-        "client_ip": get_client_ip(request),
-        "duration_ms": duration_ms,
-    }
+    in_progress_labels = (method, endpoint, "in_progress")
+    HTTP_ACTIVE_REQUESTS.labels(*in_progress_labels).inc()
 
-    if response.status_code >= 400:
-        logger.warning("request completed", extra=extra)
-    else:
-        logger.info("request completed", extra=extra)
+    status_code = "500"
+    try:
+        response = await call_next(request)
+        status_code = str(response.status_code)
+        return response
+    finally:
+        duration_seconds = time.perf_counter() - started_at
+        duration_ms = round(duration_seconds * 1000, 2)
 
-    return response
+        HTTP_ACTIVE_REQUESTS.labels(*in_progress_labels).dec()
+        HTTP_REQUESTS_TOTAL.labels(method=method, endpoint=endpoint, status_code=status_code).inc()
+        HTTP_REQUEST_DURATION_SECONDS.labels(
+            method=method, endpoint=endpoint, status_code=status_code
+        ).observe(duration_seconds)
+
+        extra = {
+            "event": "http_request",
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": int(status_code) if status_code.isdigit() else status_code,
+            "client_ip": get_client_ip(request),
+            "duration_ms": duration_ms,
+        }
+
+        if status_code.isdigit() and int(status_code) >= 400:
+            logger.warning("request completed", extra=extra)
+        else:
+            logger.info("request completed", extra=extra)
+
 
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc):
@@ -158,7 +214,10 @@ async def root(request: Request):
     """
     Returns comprehensive system and service information.
     """
+    DEVOPS_INFO_ENDPOINT_CALLS.labels(endpoint="/").inc()
+    collection_started_at = time.perf_counter()
     uptime = get_uptime()
+    DEVOPS_INFO_UPTIME_SECONDS.set(uptime["seconds"])
     
     data = {
         "service": {
@@ -189,10 +248,14 @@ async def root(request: Request):
         },
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
-            {"path": "/health", "method": "GET", "description": "Health check"}
+            {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ]
     }
 
+    DEVOPS_INFO_SYSTEM_COLLECTION_SECONDS.labels(endpoint="/").observe(
+        time.perf_counter() - collection_started_at
+    )
     return data
 
 @app.get("/health")
@@ -200,7 +263,9 @@ async def health_check():
     """
     Simple health check for Kubernetes probes.
     """
+    DEVOPS_INFO_ENDPOINT_CALLS.labels(endpoint="/health").inc()
     uptime = get_uptime()
+    DEVOPS_INFO_UPTIME_SECONDS.set(uptime["seconds"])
     return {
         "status": "healthy",
         "timestamp": utc_now_iso(),

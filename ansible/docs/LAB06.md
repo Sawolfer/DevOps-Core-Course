@@ -1,8 +1,7 @@
 # Lab 6: Advanced Ansible & CI/CD - Submission
 
-**Name:** Your Name  
+**Name:** Savva Ponomarev
 **Date:** 2026-03-05  
-**Lab Points:** 10 + 2.5 bonus
 
 ---
 
@@ -203,8 +202,6 @@ Added to root `README.md`:
 - Python app Ansible deployment badge
 - Bonus app Ansible deployment badge
 
-> Replace `your-username` in badge URLs with your GitHub username.
-
 ### Research Answers
 1. **Security implications of SSH keys in GitHub Secrets**  
    Secrets are encrypted at rest but still exposed to workflows at runtime; risk includes malicious workflow changes or compromised runners. Mitigate with environment protection rules, limited key scope, and key rotation.
@@ -228,15 +225,15 @@ This file serves as complete Lab 6 documentation and includes:
 - Research question answers
 - Bonus architecture and workflow strategy
 
-### Evidence Collection Checklist (attach from your environment)
-- [ ] `--list-tags` output screenshot
-- [ ] Rescue block run screenshot/log
-- [ ] Compose deployment success output
-- [ ] Idempotent second-run output
-- [ ] Wipe scenarios 1–4 outputs
-- [ ] GitHub Actions successful runs
-- [ ] `ansible-lint` success logs
-- [ ] App accessibility curls (`:8000`, `:8001`)
+### Evidence Collection Checklist
+- [x] `--list-tags` output screenshot
+- [x] Rescue block run screenshot/log
+- [x] Compose deployment success output
+- [x] Idempotent second-run output
+- [x] Wipe scenarios 1–4 outputs
+- [x] GitHub Actions successful runs
+- [x] `ansible-lint` success logs
+- [x] App accessibility curls (`:8000`, `:8001`)
 
 ---
 

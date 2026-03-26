@@ -1,6 +1,7 @@
 """
 Unit tests for DevOps Info Service FastAPI application.
 """
+import re
 import pytest
 from fastapi.testclient import TestClient
 import sys
@@ -164,6 +165,34 @@ class TestUptimeCalculation:
         # Should contain hours and minutes
         assert "hours" in uptime_human
         assert "minutes" in uptime_human
+
+
+class TestPrometheusMetrics:
+    """Test suite for Prometheus metrics endpoint (/metrics)."""
+
+    def test_metrics_endpoint_exposes_metrics(self):
+        client.get("/")
+        client.get("/health")
+
+        response = client.get("/metrics")
+        assert response.status_code == 200
+
+        content_type = response.headers.get("content-type", "")
+        assert "text/plain" in content_type
+
+        body = response.text
+        assert "http_requests_total" in body
+        assert "http_request_duration_seconds" in body
+        assert "http_active_requests" in body
+
+        assert re.search(
+            r'http_requests_total\{[^}]*endpoint="/"[^}]*method="GET"[^}]*status_code="200"[^}]*\}',
+            body,
+        )
+        assert "devops_info_endpoint_calls_total" in body
+        assert 'devops_info_endpoint_calls_total{endpoint="/"}' in body
+        assert "devops_info_system_collection_seconds" in body
+        assert "devops_info_uptime_seconds" in body
 
 if __name__ == "__main__":
     pytest.main(["-v", "--cov=.", "--cov-report=term-missing"])
