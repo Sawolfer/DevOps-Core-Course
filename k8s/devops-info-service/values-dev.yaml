@@ -1,32 +1,32 @@
 nameOverride: ""
 fullnameOverride: ""
 
-replicaCount: 3
+replicaCount: 1
 
 image:
   repository: devops-info-service
-  tag: v1
+  tag: latest
   pullPolicy: IfNotPresent
 
 service:
   type: NodePort
   port: 80
   targetPort: 8000
-  nodePort: 30080
+  nodePort: 30083
 
 resources:
   requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
     cpu: 100m
     memory: 128Mi
-  limits:
-    cpu: 300m
-    memory: 256Mi
 
 env:
   host: 0.0.0.0
 
-environment: staging
-logLevel: info
+environment: dev
+logLevel: debug
 
 serviceAccount:
   name: default
@@ -34,8 +34,8 @@ serviceAccount:
 secret:
   enabled: true
   data:
-    username: app-user
-    password: app-pass
+    username: dev-user
+    password: dev-pass
 
 vault:
   enabled: false
@@ -47,7 +47,7 @@ vault:
 livenessProbe:
   path: /health
   port: http
-  initialDelaySeconds: 10
+  initialDelaySeconds: 5
   periodSeconds: 10
   timeoutSeconds: 2
   failureThreshold: 3
