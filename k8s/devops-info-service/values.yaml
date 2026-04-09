@@ -25,6 +25,25 @@ resources:
 env:
   host: 0.0.0.0
 
+environment: dev
+logLevel: info
+
+serviceAccount:
+  name: default
+
+secret:
+  enabled: true
+  data:
+    username: change-me
+    password: change-me
+
+vault:
+  enabled: false
+  role: devops-info-service
+  secretPath: secret/data/myapp/config
+  renderedFileName: config
+  agentInjectCommand: ""
+
 livenessProbe:
   path: /health
   port: http
