@@ -28,6 +28,19 @@ env:
 environment: dev
 logLevel: info
 
+config:
+  mountPath: /config
+  fileName: config.json
+  featureFlags:
+    visitsCounter: "true"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  mountPath: /app/data
+  visitsFileName: visits
+
 serviceAccount:
   name: default
 
