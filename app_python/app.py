@@ -4,9 +4,12 @@ import os
 import platform
 import socket
 import sys
+import tempfile
+import threading
 import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, Request, Response
@@ -64,9 +67,57 @@ def configure_logging() -> logging.Logger:
 
 logger = configure_logging()
 
+VISITS_FILE_ENV = "VISITS_FILE"
+DEFAULT_VISITS_FILE = "data/visits"
+visits_lock = threading.Lock()
+
 
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def get_visits_file_path() -> Path:
+    return Path(os.getenv(VISITS_FILE_ENV, DEFAULT_VISITS_FILE))
+
+
+def read_visits_count() -> int:
+    visits_file = get_visits_file_path()
+    if not visits_file.exists():
+        return 0
+
+    try:
+        raw = visits_file.read_text(encoding="utf-8").strip()
+        if not raw:
+            return 0
+        value = int(raw)
+        return value if value >= 0 else 0
+    except (OSError, ValueError):
+        logger.warning(
+            "failed to read visits counter, reset to 0",
+            extra={"event": "visits_read_error", "path": str(visits_file)},
+        )
+        return 0
+
+
+def write_visits_count(value: int) -> None:
+    visits_file = get_visits_file_path()
+    visits_file.parent.mkdir(parents=True, exist_ok=True)
+
+    with tempfile.NamedTemporaryFile(
+        "w", delete=False, dir=str(visits_file.parent), encoding="utf-8"
+    ) as tmp_file:
+        tmp_file.write(f"{value}\n")
+        tmp_name = tmp_file.name
+
+    os.replace(tmp_name, visits_file)
+
+
+def increment_visits_count() -> int:
+    with visits_lock:
+        current = read_visits_count()
+        updated = current + 1
+        write_visits_count(updated)
+        return updated
 
 
 def get_client_ip(request: Request) -> str:
@@ -75,12 +126,14 @@ def get_client_ip(request: Request) -> str:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    startup_visits = read_visits_count()
     logger.info(
         "application startup",
         extra={
             "event": "startup",
             "host": os.getenv("HOST", "0.0.0.0"),
             "port": int(os.getenv("PORT", 8000)),
+            "visits": startup_visits,
         },
     )
     yield
@@ -216,6 +269,7 @@ async def root(request: Request):
     """
     DEVOPS_INFO_ENDPOINT_CALLS.labels(endpoint="/").inc()
     collection_started_at = time.perf_counter()
+    visits = increment_visits_count()
     uptime = get_uptime()
     DEVOPS_INFO_UPTIME_SECONDS.set(uptime["seconds"])
     
@@ -240,6 +294,9 @@ async def root(request: Request):
             "current_time": utc_now_iso(),
             "timezone": "UTC"
         },
+        "stats": {
+            "visits": visits
+        },
         "request": {
             "client_ip": get_client_ip(request),
             "user_agent": request.headers.get("user-agent"),
@@ -249,6 +306,7 @@ async def root(request: Request):
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/visits", "method": "GET", "description": "Visits counter"},
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ]
     }
@@ -257,6 +315,13 @@ async def root(request: Request):
         time.perf_counter() - collection_started_at
     )
     return data
+
+
+@app.get("/visits")
+async def visits() -> dict[str, int]:
+    """Return the current persisted visits counter value."""
+    DEVOPS_INFO_ENDPOINT_CALLS.labels(endpoint="/visits").inc()
+    return {"visits": read_visits_count()}
 
 @app.get("/health")
 async def health_check():

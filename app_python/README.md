@@ -4,9 +4,10 @@ A simple web service that provides comprehensive information about itself and it
 
 ## Overview
 
-This service exposes two HTTP endpoints:
+This service exposes HTTP endpoints:
 - `/` - Returns detailed service, system, runtime, and request information
 - `/health` - Returns health status (for monitoring and Kubernetes probes)
+- `/visits` - Returns persisted visits counter
 - `/metrics` - Exposes Prometheus metrics (for scraping)
 
 ## Prerequisites
@@ -58,6 +59,7 @@ The application can be configured using environment variables:
 |----------|---------|-------------|
 | `HOST` | `0.0.0.0` | Server host address (use 127.0.0.1 for localhost only) |
 | `PORT` | `8000` | Server port number |
+| `VISITS_FILE` | `data/visits` | Path to file with persisted visits counter |
 
 **Examples:**
 ```bash
@@ -66,6 +68,25 @@ PORT=9000 python app.py
 
 # Run on localhost only, port 3000
 HOST=127.0.0.1 PORT=3000 python app.py
+```
+
+## Visits Persistence
+
+Each request to `/` increments a counter stored in `VISITS_FILE`.
+
+- `GET /` increments and returns current value under `stats.visits`
+- `GET /visits` returns current counter without incrementing
+
+**Example:**
+```bash
+curl http://localhost:8000/visits
+```
+
+```json
+{
+  "visits": 3
+}
+```
 
 
 ## API Endpoints
@@ -122,6 +143,18 @@ Simple health check endpoint for monitoring.
 }
 ```
 
+**GET /visits**
+
+Returns current persisted visits counter.
+
+*Response example*
+
+```json
+{
+  "visits": 7
+}
+```
+
 **GET /metrics**
 
 Prometheus-compatible metrics endpoint.
@@ -173,6 +206,26 @@ docker run -d -p 8000:8000 devops-info-service:latest
 docker pull brainpumpkin/devops-info-service:latest
 docker run -d -p 8000:8000 brainpumpkin/devops-info-service:latest
 ```
+
+### Persist Visits Counter with Docker Compose
+
+From [monitoring/docker-compose.yml](../monitoring/docker-compose.yml), service `app-python` mounts `../app_python/data:/app/data` and sets `VISITS_FILE=/app/data/visits`.
+
+Validation flow:
+```bash
+cd monitoring
+docker compose up -d app-python
+
+curl http://localhost:8000/
+curl http://localhost:8000/
+curl http://localhost:8000/visits
+
+cat ../app_python/data/visits
+docker compose restart app-python
+curl http://localhost:8000/visits
+```
+
+The value after restart should continue from the previous counter value.
 ## Docker Hub
 Repository: https://hub.docker.com/r/brainpumpkin/devops-info-service
 

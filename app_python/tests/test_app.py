@@ -12,6 +12,11 @@ from app import app
 
 client = TestClient(app)
 
+
+@pytest.fixture(autouse=True)
+def isolate_visits_file(monkeypatch, tmp_path):
+    monkeypatch.setenv("VISITS_FILE", str(tmp_path / "visits"))
+
 class TestRootEndpoint:
     """Test suite for the root endpoint (/)."""
     
@@ -63,6 +68,8 @@ class TestRootEndpoint:
         assert "uptime_human" in runtime
         assert "current_time" in runtime
         assert "timezone" in runtime
+        assert "stats" in response.json()
+        assert "visits" in response.json()["stats"]
         
         assert runtime["uptime_seconds"] >= 0
 
@@ -193,6 +200,23 @@ class TestPrometheusMetrics:
         assert 'devops_info_endpoint_calls_total{endpoint="/"}' in body
         assert "devops_info_system_collection_seconds" in body
         assert "devops_info_uptime_seconds" in body
+
+
+class TestVisitsEndpoint:
+    """Test suite for the visits counter endpoint (/visits)."""
+
+    def test_visits_default_zero(self):
+        response = client.get("/visits")
+        assert response.status_code == 200
+        assert response.json()["visits"] == 0
+
+    def test_visits_incremented_by_root(self):
+        client.get("/")
+        client.get("/")
+
+        response = client.get("/visits")
+        assert response.status_code == 200
+        assert response.json()["visits"] == 2
 
 if __name__ == "__main__":
     pytest.main(["-v", "--cov=.", "--cov-report=term-missing"])

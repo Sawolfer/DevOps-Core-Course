@@ -4,10 +4,10 @@
   value: {{ .Values.service.targetPort | quote }}
 - name: HOST
   value: {{ .Values.env.host | quote }}
-- name: APP_ENV
-  value: {{ .Values.environment | quote }}
-- name: LOG_LEVEL
-  value: {{ .Values.logLevel | quote }}
+- name: CONFIG_FILE
+  value: {{ printf "%s/%s" .Values.config.mountPath .Values.config.fileName | quote }}
+- name: VISITS_FILE
+  value: {{ printf "%s/%s" .Values.persistence.mountPath .Values.persistence.visitsFileName | quote }}
 {{- end -}}
 
 {{/* Vault Agent Injector annotations for file-based secret rendering. */}}
