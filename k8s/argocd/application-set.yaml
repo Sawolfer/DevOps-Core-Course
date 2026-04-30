@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: devops-info-service-set
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: dev
+            valuesFile: values-dev.yaml
+            autoSync: true
+          - env: prod
+            namespace: prod
+            valuesFile: values-prod.yaml
+            autoSync: false
+  template:
+    metadata:
+      name: 'devops-info-service-{{env}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/Sawolfer/DevOps-Core-Course.git
+        targetRevision: master
+        path: k8s/devops-info-service
+        helm:
+          valueFiles:
+            - '{{valuesFile}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true

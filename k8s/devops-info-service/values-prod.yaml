@@ -1,0 +1,74 @@
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 5
+
+image:
+  repository: devops-info-service
+  tag: v1
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8000
+  nodePort: 30082
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+env:
+  host: 0.0.0.0
+
+environment: prod
+logLevel: warning
+
+config:
+  mountPath: /config
+  fileName: config.json
+  featureFlags:
+    visitsCounter: "true"
+
+persistence:
+  enabled: true
+  size: 500Mi
+  storageClass: ""
+  mountPath: /app/data
+  visitsFileName: visits
+
+serviceAccount:
+  name: default
+
+secret:
+  enabled: true
+  data:
+    username: change-me
+    password: change-me
+
+vault:
+  enabled: false
+  role: devops-info-service
+  secretPath: secret/data/myapp/config
+  renderedFileName: config
+  agentInjectCommand: ""
+
+livenessProbe:
+  path: /health
+  port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+readinessProbe:
+  path: /health
+  port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
