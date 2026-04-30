@@ -1,0 +1,14 @@
+rollout:
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+  analysis:
+    enabled: false
+    interval: 10s
+    count: 3
+    failureLimit: 1
+    web:
+      path: /health
+      jsonPath: "{$.status}"
+      successCondition: "result == \"ok\""

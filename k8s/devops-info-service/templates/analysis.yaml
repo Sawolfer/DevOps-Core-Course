@@ -1,0 +1,19 @@
+{{- if .Values.rollout.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "common.fullname" . }}-success-rate
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  metrics:
+    - name: webcheck
+      interval: {{ .Values.rollout.analysis.interval }}
+      count: {{ .Values.rollout.analysis.count }}
+      failureLimit: {{ .Values.rollout.analysis.failureLimit }}
+      provider:
+        web:
+          url: {{ printf "http://%s.%s.svc%s" (include "common.fullname" .) .Release.Namespace .Values.rollout.analysis.web.path | quote }}
+          jsonPath: {{ .Values.rollout.analysis.web.jsonPath | quote }}
+      successCondition: {{ .Values.rollout.analysis.web.successCondition | quote }}
+{{- end }}

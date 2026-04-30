@@ -8,11 +8,26 @@ image:
   tag: v1
   pullPolicy: IfNotPresent
 
+rollout:
+  strategy: canary
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+  analysis:
+    enabled: true
+    interval: 10s
+    count: 3
+    failureLimit: 1
+    web:
+      path: /health
+      jsonPath: "{$.status}"
+      successCondition: "result == \"healthy\""
+
 service:
   type: NodePort
   port: 80
   targetPort: 8000
-  nodePort: 30081
+  nodePort: 30083
 
 resources:
   requests:
@@ -35,7 +50,7 @@ config:
     visitsCounter: "true"
 
 persistence:
-  enabled: true
+  enabled: false
   size: 100Mi
   storageClass: ""
   mountPath: /app/data
