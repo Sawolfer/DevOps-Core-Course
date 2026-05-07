@@ -8,6 +8,21 @@ image:
   tag: v1
   pullPolicy: IfNotPresent
 
+rollout:
+  strategy: canary
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+  analysis:
+    enabled: false
+    interval: 10s
+    count: 3
+    failureLimit: 1
+    web:
+      path: /health
+      jsonPath: "{$.status}"
+      successCondition: "result == \"ok\""
+
 service:
   type: NodePort
   port: 80

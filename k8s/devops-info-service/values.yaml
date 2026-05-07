@@ -3,16 +3,33 @@ fullnameOverride: ""
 
 replicaCount: 3
 
+useStatefulSet: true
+
 image:
   repository: devops-info-service
   tag: v1
   pullPolicy: IfNotPresent
 
+rollout:
+  strategy: canary
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+  analysis:
+    enabled: false
+    interval: 10s
+    count: 3
+    failureLimit: 1
+    web:
+      path: /health
+      jsonPath: "{$.status}"
+      successCondition: "result == \"ok\""
+
 service:
   type: NodePort
   port: 80
   targetPort: 8000
-  nodePort: 30080
+  nodePort: 30082  # Changed from 30081 to avoid future conflicts
 
 resources:
   requests:
@@ -72,3 +89,6 @@ readinessProbe:
   periodSeconds: 5
   timeoutSeconds: 2
   failureThreshold: 3
+
+updateStrategy:
+  type: RollingUpdate
