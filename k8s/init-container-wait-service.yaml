@@ -1,0 +1,82 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dependency-service
+  labels:
+    app: dependency-service
+spec:
+  selector:
+    app: dependency-service
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dependency-service
+  labels:
+    app: dependency-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dependency-service
+  template:
+    metadata:
+      labels:
+        app: dependency-service
+    spec:
+      containers:
+        - name: dep-app
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Dependency service is ready!"
+              nc -lk -p 8080 -e echo -e "HTTP/1.1 200 OK\r\n\r\nOK"
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wait-for-service-demo
+  labels:
+    app: wait-for-service-demo
+spec:
+  initContainers:
+    - name: wait-for-dependency
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "=== Init Container: Waiting for dependency-service ==="
+          until nslookup dependency-service; do
+            echo "$(date): dependency-service not ready yet, retrying in 2s..."
+            sleep 2
+          done
+          echo "$(date): dependency-service is ready!"
+      env:
+        - name: NAMESERVER
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+  containers:
+    - name: main-app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "=== Main Container Started ==="
+          echo "Dependency was confirmed available by init container"
+          echo "Checking connectivity:"
+          nslookup dependency-service
+          echo "All good, running..."
+          sleep 3600
+  restartPolicy: Never
