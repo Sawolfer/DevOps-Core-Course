@@ -3,6 +3,8 @@ fullnameOverride: ""
 
 replicaCount: 3
 
+useStatefulSet: true
+
 image:
   repository: devops-info-service
   tag: v1
@@ -87,3 +89,6 @@ readinessProbe:
   periodSeconds: 5
   timeoutSeconds: 2
   failureThreshold: 3
+
+updateStrategy:
+  type: RollingUpdate
