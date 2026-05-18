@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-download-demo
+  labels:
+    app: init-download-demo
+spec:
+  initContainers:
+    - name: init-download
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "=== Init Container: Downloading file ==="
+          wget -q -O /work-dir/index.html https://example.com
+          echo "Downloaded $(wc -c < /work-dir/index.html) bytes"
+          ls -la /work-dir/
+      volumeMounts:
+        - name: workdir
+          mountPath: /work-dir
+  containers:
+    - name: main-app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "=== Main Container: Checking downloaded file ==="
+          echo "File exists: $(test -f /data/index.html && echo YES || echo NO)"
+          echo "File size: $(wc -c < /data/index.html) bytes"
+          echo "First 5 lines:"
+          head -5 /data/index.html
+          echo "=== Init container pattern works! Sleeping... ==="
+          sleep 3600
+      volumeMounts:
+        - name: workdir
+          mountPath: /data
+  volumes:
+    - name: workdir
+      emptyDir: {}
+  restartPolicy: Never
